@@ -1,0 +1,8 @@
+Before Running:
+Install webdriver-manager by running: pip install webdriver-manager
+Install
+
+
+Identifying elements:
+Can identify using 1) xpath, id, name, tag name, css selector, classname, link text, partial link text
+See excel sheet for arguments to use
