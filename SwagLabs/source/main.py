@@ -1,8 +1,10 @@
-from methods import get_web_element, open_browser, input_data, verify_text_present, verify_element_present, verify_text_contains, verify_text
+from methods import get_web_element, open_browser, input_data, verify_text_present, verify_element_present, verify_text_contains, verify_text, add_to_shopping_cart, remove_from_cart
 from pathlib import Path
 from openpyxl import load_workbook
 from selenium.common.exceptions import ElementNotInteractableException
 import time
+import calendar
+import datetime
 
 
 def read_steps():
@@ -91,9 +93,29 @@ if __name__ == '__main__':
                 sheet["H"+str(row)] = "Failed"
         elif keyword == "VerifyTextPresent":
             pass
+        elif keyword == "AddToShoppingCart":
+            if str(input_value).strip() is not "":
+                add_to_cart = add_to_shopping_cart(browser, input_value)
+                if add_to_cart["added"]:
+                    sheet["H"+str(row)] = "Passed"
+                    sheet["I"+str(row)] = ""
+                else:
+                    sheet["H"+str(row)] = "Failed"
+                    sheet["I"+str(row)] = add_to_cart["message"]
+            else:
+
+                add_to_cart = add_to_shopping_cart(browser)
+                if add_to_cart["added"]:
+                    sheet["H"+str(row)] = "Passed"
+                    sheet["I"+str(row)] = ""
+                else:
+                    sheet["H"+str(row)] = "Failed"
+                    sheet["I"+str(row)] = add_to_cart["message"]
         elif keyword == "Delay":
             time.sleep(input_value)
             sheet["H"+str(row)] = "Passed"
+        elif keyword == "Back":
+            browser.back()
         elif keyword == "VerifyElementPresent":
             is_element_present = verify_element_present(
                 browser, identifier, value)
@@ -102,5 +124,23 @@ if __name__ == '__main__':
             else:
                 # fail the test
                 sheet["H"+str(row)] = "Failed"
-    workbook.save(Path(__file__).parent / '../results/results.xlsx')
-    browser.close()
+                sheet["I"+str(row)] = add_to_cart["message"]
+        elif keyword == "RemoveFromShoppingCart":
+            if str(input_value).strip() is not "":
+                remove_from_cart = remove_from_cart(browser, input_value)
+                if remove_from_cart["removed"]:
+                    sheet["H"+str(row)] = "Passed"
+                    sheet["I"+str(row)] = ""
+                else:
+                    sheet["H"+str(row)] = "Failed"
+                    sheet["I"+str(row)] = remove_from_cart["message"]
+            else:
+                sheet["H"+str(row)] = "Failed"
+                sheet["I"+str(row)] = "You need to specify the name of the product to remove"
+
+    workbook.save(Path(__file__).parent /
+                  '../results/results_{}.xlsx'.format(
+                      calendar.timegm(time.gmtime())))
+
+    # workbook.save(root_path)
+    # browser.close()
