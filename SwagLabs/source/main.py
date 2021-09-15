@@ -1,4 +1,4 @@
-from methods import get_web_element, open_browser, input_data, verify_text_present, verify_element_present, verify_text_contains, verify_text, add_to_shopping_cart, remove_from_cart
+from methods import get_web_element, open_browser, input_data, verify_text_present, verify_element_present, verify_text_contains, verify_text, add_to_shopping_cart, remove_from_cart, verify_sorting
 from pathlib import Path
 from openpyxl import load_workbook
 from selenium.common.exceptions import ElementNotInteractableException
@@ -34,13 +34,9 @@ def read_steps():
             count += 1
             test_step = {"step": step, "keyword": keyword, "object": page_object,
                          "identifier": identifier, "value": value, "input": input_value, "row": count}
-            print(count)
             test_steps.append(test_step)
         else:
             break
-
-    for item in test_steps:
-        print(item["step"])
 
     return {"test_steps": test_steps, "sheet": sheet, "workbook": workbook}
 
@@ -81,16 +77,24 @@ if __name__ == '__main__':
             sheet["H"+str(row)] = "Passed"
         elif keyword == "InputData":
             element = get_web_element(browser, identifier, value)
-            input_data(browser, element, input_value)
-            sheet["H"+str(row)] = "Passed"
+            if element["element"] is not None:
+                input_data(browser, element["element"], input_value)
+                sheet["H"+str(row)] = "Passed"
+            else:
+                sheet["H"+str(row)] = "Failed"
+                sheet["I"+str(row)] = "Web element could not be found"
         elif keyword == "Click":
             element = get_web_element(browser, identifier, value)
-            try:
-                element.click()
-                sheet["H"+str(row)] = "Passed"
-            except ElementNotInteractableException:
-                print("The element is present but hidden")
+            if element["element"] is not None:
+                try:
+                    element["element"].click()
+                    sheet["H"+str(row)] = "Passed"
+                except ElementNotInteractableException:
+                    print("The element is present but hidden")
+                    sheet["H"+str(row)] = "Failed"
+            else:
                 sheet["H"+str(row)] = "Failed"
+                sheet["I"+str(row)] = "Web element could not be found"
         elif keyword == "VerifyTextPresent":
             pass
         elif keyword == "AddToShoppingCart":
@@ -137,6 +141,40 @@ if __name__ == '__main__':
             else:
                 sheet["H"+str(row)] = "Failed"
                 sheet["I"+str(row)] = "You need to specify the name of the product to remove"
+
+        elif keyword == "VerifySorting":
+            if input_value == "Name (A to Z)":
+                sort = verify_sorting(browser, "Name", "asc")
+                if sort["is_sorted"]:
+                    sheet["H"+str(row)] = "Passed"
+                    sheet["I"+str(row)] = ""
+                else:
+                    sheet["H"+str(row)] = "Failed"
+                    sheet["I"+str(row)] = sort["message"]
+            elif input_value == "Name (Z to A)":
+                sort = verify_sorting(browser, "Name", "desc")
+                if sort["is_sorted"]:
+                    sheet["H"+str(row)] = "Passed"
+                    sheet["I"+str(row)] = ""
+                else:
+                    sheet["H"+str(row)] = "Failed"
+                    sheet["I"+str(row)] = sort["message"]
+            elif input_value == "Price (low to high)":
+                sort = verify_sorting(browser, "Price", "asc")
+                if sort["is_sorted"]:
+                    sheet["H"+str(row)] = "Passed"
+                    sheet["I"+str(row)] = ""
+                else:
+                    sheet["H"+str(row)] = "Failed"
+                    sheet["I"+str(row)] = sort["message"]
+            elif input_value == "Price (high to low)":
+                sort = verify_sorting(browser, "Price", "desc")
+                if sort["is_sorted"]:
+                    sheet["H"+str(row)] = "Passed"
+                    sheet["I"+str(row)] = ""
+                else:
+                    sheet["H"+str(row)] = "Failed"
+                    sheet["I"+str(row)] = sort["message"]
 
     workbook.save(Path(__file__).parent /
                   '../results/results_{}.xlsx'.format(

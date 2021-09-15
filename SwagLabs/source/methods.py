@@ -1,5 +1,7 @@
+from os import replace
 from selenium import webdriver
 from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import Select
 from webdriver_manager.chrome import ChromeDriverManager
 from webdriver_manager.firefox import GeckoDriverManager
 from webdriver_manager.utils import ChromeType
@@ -33,6 +35,8 @@ def open_browser(browser_choice):
 
 def get_web_element(driver, identifier, value):
     message = ""
+    element = None
+
     if identifier == "id":
         try:
             element = driver.find_element(By.ID, value)
@@ -329,3 +333,78 @@ def view_cart(driver):
 
 def checkout(driver):
     pass
+
+
+def verify_sorting(driver, by, order):
+    is_sorted = False
+    message = ""
+
+    sort_dropdown = Select(driver.find_element_by_xpath(
+        "//div[@class='right_component']/span/select"))
+
+    if by == "Name":
+        product_names_pre_sort = text_from_web_elements(driver.find_elements(
+            By.XPATH, "//div[@class='inventory_list']/div[@class='inventory_item']/div[@class='inventory_item_description']/div[@class='inventory_item_label']/a/div"))
+
+        if order == "asc":
+            sort_dropdown.select_by_value("az")
+            product_names_post_sort = text_from_web_elements(driver.find_elements(
+                By.XPATH, "//div[@class='inventory_list']/div[@class='inventory_item']/div[@class='inventory_item_description']/div[@class='inventory_item_label']/a/div"))
+
+            if sorted(product_names_pre_sort) == product_names_post_sort:
+                is_sorted = True
+            else:
+                is_sorted = False
+                message = "Error. Not sorted based on Name ASC"
+        else:
+            sort_dropdown.select_by_value("za")
+            product_names_post_sort = text_from_web_elements(driver.find_elements(
+                By.XPATH, "//div[@class='inventory_list']/div[@class='inventory_item']/div[@class='inventory_item_description']/div[@class='inventory_item_label']/a/div"))
+
+            if sorted(product_names_pre_sort, reverse=True) == product_names_post_sort:
+                is_sorted = True
+            else:
+                is_sorted = False
+                message = "Error. Not sorted based on Name DESC"
+    else:
+        product_prices_pre_sort = text_from_web_elements(driver.find_elements(
+            By.XPATH, "//div[@class='inventory_item_price']"))
+        new_product_prices_pre_sort = [float(i) for i in [price.replace(
+            "$", "") for price in product_prices_pre_sort]]
+        if order == "asc":
+            sort_dropdown.select_by_value("lohi")
+            product_prices_post_sort = text_from_web_elements(driver.find_elements(
+                By.XPATH, "//div[@class='inventory_item_price']"))
+
+            new_product_prices_post_sort = [float(i) for i in [
+                price.replace("$", "") for price in product_prices_post_sort]]
+
+            if sorted(new_product_prices_post_sort) == new_product_prices_post_sort:
+                is_sorted = True
+            else:
+                is_sorted = False
+                message = "Error. Not sorted based on Price ASC"
+
+        else:
+            sort_dropdown.select_by_value("hilo")
+            product_prices_post_sort = text_from_web_elements(driver.find_elements(
+                By.XPATH, "//div[@class='inventory_item_price']"))
+
+            new_product_prices_post_sort = [float(i) for i in [
+                price.replace("$", "") for price in product_prices_post_sort]]
+
+            if sorted(new_product_prices_pre_sort, reverse=True) == new_product_prices_post_sort:
+                is_sorted = True
+            else:
+                is_sorted = False
+                message = "Error. Not sorted based on price DESC"
+
+    return {"is_sorted": is_sorted, "message": message}
+
+
+def text_from_web_elements(web_elements_list):
+    text_list = []
+
+    for element in web_elements_list:
+        text_list.append(str(element.text))
+    return text_list
